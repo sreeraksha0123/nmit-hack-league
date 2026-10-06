@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0a0d14] text-slate-100;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f1422;
+}
+::-webkit-scrollbar-thumb {
+  background: #232d42;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Devfolio card subtle glow */
+.devfolio-card {
+  @apply bg-[#101522] border border-[#1f293d] rounded-xl transition-all duration-200;
+}
+.devfolio-card:hover {
+  @apply border-[#3770ff]/40 shadow-lg shadow-blue-500/5;
+}
+
+.devfolio-glow {
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(55, 112, 255, 0.08), transparent 40%);
+}
