@@ -1,0 +1,144 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum GenderEligibility {
+  ALL
+  MALE
+  FEMALE
+}
+
+enum HackathonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ParticipationStatus {
+  REGISTERED
+  PARTICIPATED
+  ROUND_1
+  ROUND_2
+  FINALIST
+  WINNER
+  DID_NOT_PARTICIPATE
+  DISQUALIFIED
+}
+
+model User {
+  id              String         @id @default(uuid())
+  name            String
+  usn             String         @unique
+  email           String         @unique
+  passwordHash    String
+  department      String?        // e.g. "ISE", "CSE", "AIML", "AIDS", "ECE", "EEE", "ME", "CIVIL"
+  currentYear     Int?           // 1, 2, 3, 4
+  graduationYear  Int?           // 2025, 2026, 2027, 2028, 2029
+  gender          Gender?
+  role            Role           @default(STUDENT)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  registrations   Registration[]
+  feedback        Feedback[]
+  createdHackathons Hackathon[]  @relation("AdminCreatedHackathons")
+
+  @@index([email])
+  @@index([usn])
+  @@index([department])
+  @@index([graduationYear])
+}
+
+model Hackathon {
+  id                   String                @id @default(uuid())
+  title                String
+  organizer            String
+  description          String                @db.Text
+  category             String                // e.g. "AI/ML", "Web3", "Open Innovation", "Cybersecurity", "FinTech"
+  registrationUrl      String
+  registrationDeadline DateTime
+  eventDate            DateTime
+  teamSize             String                // e.g. "1-4 Members"
+  prizeInfo            String?
+  bannerUrl            String?
+  status               HackathonStatus       @default(PUBLISHED)
+  instructions         String?               @db.Text
+  createdById          String
+  createdBy            User                  @relation("AdminCreatedHackathons", fields: [createdById], references: [id])
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  eligibility          HackathonEligibility?
+  registrations        Registration[]
+  feedback             Feedback[]
+
+  @@index([status])
+  @@index([registrationDeadline])
+  @@index([category])
+}
+
+model HackathonEligibility {
+  id                  String            @id @default(uuid())
+  hackathonId         String            @unique
+  hackathon           Hackathon         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  allowedDepartments String[]          // ["ISE", "CSE"] or empty for all
+  allowedBatches      Int[]             // [2026, 2027] or empty for all
+  allowedGender       GenderEligibility @default(ALL)
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model Registration {
+  id              String              @id @default(uuid())
+  studentId       String
+  hackathonId     String
+  status          ParticipationStatus @default(REGISTERED)
+  round           String?             // e.g. "Preliminary", "Idea Submission", "Semi-Final", "Grand Finale"
+  adminNotes      String?             @db.Text
+  registeredAt    DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  student         User                @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  hackathon       Hackathon           @relation(fields: [hackathonId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId, hackathonId])
+  @@index([studentId])
+  @@index([hackathonId])
+  @@index([status])
+}
+
+model Feedback {
+  id                    String    @id @default(uuid())
+  studentId             String
+  hackathonId           String
+  rating                Int       // 1 - 5
+  learnedText           String    @db.Text
+  likedText             String    @db.Text
+  improvedText          String    @db.Text
+  wouldParticipateAgain Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+
+  student               User      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  hackathon             Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId, hackathonId])
+  @@index([studentId])
+  @@index([hackathonId])
+}
