@@ -6,11 +6,11 @@ const BASE_URL = `http://127.0.0.1:${ENV.PORT}/api`;
 
 async function waitForServer(): Promise<void> {
   console.log('Connecting to NMIT Hack League API server...');
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     try {
       const res = await fetch(`http://127.0.0.1:${ENV.PORT}/api/health`);
-      if (res.ok) {
-        console.log('Server is online and responding.\n');
+      if (res.status === 200) {
+        console.log('Server and Database are online and responding.\n');
         return;
       }
     } catch (e: any) {
@@ -394,13 +394,13 @@ async function runTests() {
   console.log(`  TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('========================================================\n');
 
-  server.close(() => {
-    if (failed > 0) {
-      process.exit(1);
-    } else {
-      process.exit(0);
-    }
-  });
+  if (server && server.listening) {
+    server.close(() => {
+      process.exit(failed > 0 ? 1 : 0);
+    });
+  } else {
+    process.exit(failed > 0 ? 1 : 0);
+  }
 }
 
 runTests();

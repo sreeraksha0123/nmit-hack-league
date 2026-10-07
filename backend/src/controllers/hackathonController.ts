@@ -6,7 +6,7 @@ import { evaluateStudentEligibility } from '../services/eligibilityService';
 
 export async function listHackathons(req: Request, res: Response): Promise<void> {
   try {
-    const { category, search, eligibleOnly, status } = req.query;
+    const { category, search, eligibleOnly, status, department, batch, deadlineStatus } = req.query;
     const user = req.user;
 
     const whereClause: any = {};
@@ -22,6 +22,12 @@ export async function listHackathons(req: Request, res: Response): Promise<void>
 
     if (category && typeof category === 'string' && category !== 'ALL') {
       whereClause.category = { equals: category, mode: 'insensitive' };
+    }
+
+    if (deadlineStatus === 'OPEN') {
+      whereClause.registrationDeadline = { gte: new Date() };
+    } else if (deadlineStatus === 'CLOSED') {
+      whereClause.registrationDeadline = { lt: new Date() };
     }
 
     if (search && typeof search === 'string' && search.trim().length > 0) {
@@ -43,6 +49,27 @@ export async function listHackathons(req: Request, res: Response): Promise<void>
       orderBy: { registrationDeadline: 'asc' },
     });
 
+    let filteredHackathons = hackathons;
+
+    if (department && typeof department === 'string' && department !== 'ALL') {
+      filteredHackathons = filteredHackathons.filter((h) => {
+        if (!h.eligibility) return true;
+        const allowed = h.eligibility.allowedDepartments;
+        return allowed.length === 0 || allowed.includes(department);
+      });
+    }
+
+    if (batch && typeof batch === 'string' && batch !== 'ALL') {
+      const batchYear = parseInt(batch, 10);
+      if (!isNaN(batchYear)) {
+        filteredHackathons = filteredHackathons.filter((h) => {
+          if (!h.eligibility) return true;
+          const allowed = h.eligibility.allowedBatches;
+          return allowed.length === 0 || allowed.includes(batchYear);
+        });
+      }
+    }
+
     // If authenticated as student, attach student eligibility evaluation
     let studentProfile: any = null;
     let studentRegistrations: Set<string> = new Set();
@@ -60,7 +87,7 @@ export async function listHackathons(req: Request, res: Response): Promise<void>
       studentRegistrations = new Set(userRegs.map((r) => r.hackathonId));
     }
 
-    const formattedHackathons = hackathons.map((h) => {
+    const formattedHackathons = filteredHackathons.map((h) => {
       let isEligible = true;
       let eligibilityReasons: string[] = [];
 

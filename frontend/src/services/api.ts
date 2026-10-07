@@ -64,7 +64,15 @@ export const authApi = {
 };
 
 export const hackathonApi = {
-  list: async (params?: { category?: string; search?: string; eligibleOnly?: boolean; status?: string }) => {
+  list: async (params?: {
+    category?: string;
+    search?: string;
+    eligibleOnly?: boolean;
+    status?: string;
+    department?: string;
+    batch?: number | string;
+    deadlineStatus?: string;
+  }) => {
     const res = await api.get<{ hackathons: Hackathon[] }>('/hackathons', { params });
     return res.data.hackathons;
   },
